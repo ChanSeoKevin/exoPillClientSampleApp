@@ -2,6 +2,7 @@ package com.exosystems.exopillclientsample.ui
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,33 +20,90 @@ data class Patient(
 )
 
 /**
+ * 전기자극 결과 데이터 클래스
+ * @property id 결과 ID
+ * @property progressTime 진행 시간 (밀리초)
+ * @property modeId 모드 ID
+ */
+data class ElectricResult(
+    val id: Long,
+    val progressTime: Long,
+    val modeId: Long
+)
+
+
+/**
  * MainActivity의 UI 상태
  * @property selectedPatient 현재 선택된 환자 정보
+ * @property electricResult 최근 수신된 전기자극 결과
  */
 data class MainUiState(
-    val selectedPatient: Patient? = null
+    val selectedPatient: Patient? = null,
+    val electricResult: ElectricResult? = null
 )
 
 /**
  * MainActivity의 비즈니스 로직과 상태를 관리하는 ViewModel
  */
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(application: Application) : AndroidViewModel(application),
+    SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private val sharedPreferences = application.getSharedPreferences("patient_prefs", Context.MODE_PRIVATE)
+    private val patientSharedPreferences = application.getSharedPreferences("patient_prefs", Context.MODE_PRIVATE)
+    private val electricResultSharedPreferences = application.getSharedPreferences("electric_result_prefs", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
 
     init {
         loadPatient()
+        loadElectricResult()
+        patientSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        electricResultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        patientSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+        electricResultSharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if (sharedPreferences == electricResultSharedPreferences && (key == "electric_id" || key == "electric_progress_time" || key == "electric_mode_id")) {
+            loadElectricResult()
+        }
+        if (sharedPreferences == patientSharedPreferences && (key == "patient_id" || key == "hospital_name")) {
+            loadPatient()
+        }
     }
 
     private fun loadPatient() {
-        val patientId = sharedPreferences.getString("patient_id", null)
-        val hospitalName = sharedPreferences.getString("hospital_name", null)
+        val patientId = patientSharedPreferences.getString("patient_id", null)
+        val hospitalName = patientSharedPreferences.getString("hospital_name", null)
 
         if (patientId != null && hospitalName != null) {
-            _uiState.value = MainUiState(selectedPatient = Patient(patientId, hospitalName))
+            _uiState.update { currentState ->
+                currentState.copy(selectedPatient = Patient(patientId, hospitalName))
+            }
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(selectedPatient = null)
+            }
+        }
+    }
+
+    private fun loadElectricResult() {
+        val id = electricResultSharedPreferences.getLong("electric_id", -1L)
+        val progressTime = electricResultSharedPreferences.getLong("electric_progress_time", -1L)
+        val modeId = electricResultSharedPreferences.getLong("electric_mode_id", -1L)
+
+        if (id != -1L && progressTime != -1L && modeId != -1L) {
+            _uiState.update { currentState ->
+                currentState.copy(electricResult = ElectricResult(id, progressTime, modeId))
+            }
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(electricResult = null)
+            }
         }
     }
 
@@ -59,7 +117,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             hospitalName = "Exo Hospital"
         )
         _uiState.update { it.copy(selectedPatient = newPatient) }
-        with(sharedPreferences.edit()) {
+        with(patientSharedPreferences.edit()) {
             putString("patient_id", newPatient.patientId)
             putString("hospital_name", newPatient.hospitalName)
             apply()
@@ -71,9 +129,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun clearPatient() {
         _uiState.update { it.copy(selectedPatient = null) }
-        with(sharedPreferences.edit()) {
+        with(patientSharedPreferences.edit()) {
             remove("patient_id")
             remove("hospital_name")
+            apply()
+        }
+    }
+
+    /**
+     * 선택된 전기자극 결과 정보를 초기화 및 삭제합니다.
+     */
+    fun clearElectricResult() {
+        _uiState.update { it.copy(electricResult = null) }
+        with(electricResultSharedPreferences.edit()) {
+            remove("electric_id")
+            remove("electric_progress_time")
+            remove("electric_mode_id")
             apply()
         }
     }

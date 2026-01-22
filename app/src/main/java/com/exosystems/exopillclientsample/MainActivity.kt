@@ -54,6 +54,9 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         Text(text = "현재 선택된 환자:")
         Text(text = uiState.selectedPatient?.toString() ?: "없음")
 
+        Text(text = "최근 전기자극 결과:")
+        Text(text = uiState.electricResult?.toString() ?: "없음")
+
         Row(modifier = Modifier.padding(top = 16.dp)) {
             Button(onClick = { viewModel.selectPatient() }) {
                 Text(text = "환자 선택")
@@ -61,6 +64,10 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.width(16.dp))
             Button(onClick = { viewModel.clearPatient() }) {
                 Text(text = "환자 초기화")
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(onClick = { viewModel.clearElectricResult() }) {
+                Text(text = "전기자극 결과 초기화")
             }
         }
     }

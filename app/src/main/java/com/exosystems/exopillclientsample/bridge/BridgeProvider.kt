@@ -65,24 +65,6 @@ class BridgeProvider : ContentProvider() {
         )
     }
 
-    /** submit_result 처리: payload 검증 후 로컬 저장 및 워크 큐에 등록. */
-    private fun handleSubmitResult(extras: Bundle?): Bundle {
-        val payload = extras?.getString(ABridgeContract.EXTRA_PAYLOAD)
-        if (payload.isNullOrBlank()) {
-            return errorBundle("payload is required")
-        }
-        val requestId = extras?.getString(ABridgeContract.EXTRA_REQUEST_ID).orEmpty()
-        val stored = handleResultFromB(requestId, payload)
-        return if (stored) {
-            bundleOf(
-                ABridgeContract.KEY_OK to true,
-                ABridgeContract.KEY_STATUS to "accepted"
-            )
-        } else {
-            errorBundle("Unable to persist result")
-        }
-    }
-
     /** B에 제공할 JSON 생성. 최근 저장 결과가 있으면 포함한다. */
     private fun loadDataForB(requestId: String): String {
         val json = JSONObject()
@@ -110,7 +92,46 @@ class BridgeProvider : ContentProvider() {
             json.put("lastRequestId", last.requestId)
             json.put("lastUpdatedAt", last.updatedAtMillis)
         }
-        return json.toString()
+
+        val dataJson = json.toString()
+        Log.d(TAG, "IPC Provider: Sent Patient Data: $dataJson") // 로그 추가
+        return dataJson
+    }
+
+    /** submit_result 처리: payload 검증 후 로컬 저장 및 워크 큐에 등록. */
+    private fun handleSubmitResult(extras: Bundle?): Bundle {
+        val payload = extras?.getString(ABridgeContract.EXTRA_PAYLOAD)
+        if (payload.isNullOrBlank()) {
+            Log.e(TAG, "IPC Provider: Received empty payload for electric result.") // 로그 추가
+            return errorBundle("payload is required")
+        }
+        // val requestId = extras?.getString(ABridgeContract.EXTRA_REQUEST_ID).orEmpty() // 이 변수는 사용되지 않으므로 제거
+
+        // 전기자극 결과 파싱 및 SharedPreferences 저장
+        return try {
+            val json = JSONObject(payload)
+            val id = json.optLong("id")
+            val progressTime = json.optLong("progressTime")
+            val modeId = json.optLong("modeId")
+
+            Log.d(TAG, "IPC Provider: Received Electric Result - ID: $id, Time: $progressTime, Mode: $modeId") // 로그 추가
+
+            val electricResultPrefs = appContext.getSharedPreferences("electric_result_prefs", Context.MODE_PRIVATE)
+            with(electricResultPrefs.edit()) {
+                putLong("electric_id", id)
+                putLong("electric_progress_time", progressTime)
+                putLong("electric_mode_id", modeId)
+                apply()
+            }
+
+            bundleOf(
+                ABridgeContract.KEY_OK to true,
+                ABridgeContract.KEY_STATUS to "accepted"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "IPC Provider: Failed to parse or store electric result payload. Payload: $payload, Error: ${e.message}", e) // 로그 메시지 상세화
+            errorBundle("Failed to process electric result: ${e.message}")
+        }
     }
 
     /** 결과를 저장하고 비동기 워크를 큐에 넣는다. */
