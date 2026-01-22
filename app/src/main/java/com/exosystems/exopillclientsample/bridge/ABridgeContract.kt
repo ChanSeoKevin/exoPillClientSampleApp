@@ -14,16 +14,16 @@ object ABridgeContract {
     val BASE_URI: Uri = Uri.parse("content://$AUTHORITY")
 
     /** B -> A: 데이터 요청 메서드 이름 */
-    const val METHOD_REQUEST_DATA: String = "request_data"
+    const val METHOD_REQUEST_DATA: String = "METHOD_REQUEST_DATA"
 
     /** B -> A: 처리 결과 제출 메서드 이름 */
-    const val METHOD_SUBMIT_RESULT: String = "submit_result"
+    const val METHOD_SUBMIT_RESULT: String = "METHOD_SUBMIT_RESULT"
 
     /** 요청을 식별하기 위한 선택적 requestId */
-    const val EXTRA_REQUEST_ID: String = "request_id"
+    const val EXTRA_REQUEST_ID: String = "EXTRA_REQUEST_ID"
 
     /** 결과 제출 시 필수 payload(JSON) */
-    const val EXTRA_PAYLOAD: String = "payload"
+    const val EXTRA_PAYLOAD: String = "EXTRA_PAYLOAD"
 
     /** 응답 성공 여부 플래그 */
     const val KEY_OK: String = "ok"

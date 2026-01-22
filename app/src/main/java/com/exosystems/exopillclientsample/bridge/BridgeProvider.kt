@@ -88,7 +88,22 @@ class BridgeProvider : ContentProvider() {
         val json = JSONObject()
         json.put("requestId", requestId)
         json.put("timestamp", System.currentTimeMillis())
-        json.put("message", "sample data from A")
+
+        // SharedPreferences에서 환자 정보 읽기
+        val sharedPreferences = appContext.getSharedPreferences("patient_prefs", Context.MODE_PRIVATE)
+        val patientId = sharedPreferences.getString("patient_id", null)
+        val hospitalName = sharedPreferences.getString("hospital_name", null)
+
+        if (patientId != null && hospitalName != null) {
+            // 환자 정보가 있으면 message에 JSON 형태로 담기
+            val patientJson = JSONObject()
+            patientJson.put("patientId", patientId)
+            patientJson.put("hospitalName", hospitalName)
+            json.put("message", patientJson.toString())
+        } else {
+            // 환자 정보가 없으면 message를 비워두거나 특정 메시지 전달
+            json.put("message", "")
+        }
 
         repository.getLastResult()?.let { last ->
             json.put("lastPayload", last.payload)
