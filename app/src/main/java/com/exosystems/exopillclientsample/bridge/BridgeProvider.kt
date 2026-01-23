@@ -110,17 +110,56 @@ class BridgeProvider : ContentProvider() {
         // 전기자극 결과 파싱 및 SharedPreferences 저장
         return try {
             val json = JSONObject(payload)
-            val id = json.optLong("id")
-            val progressTime = json.optLong("progressTime")
-            val modeId = json.optLong("modeId")
+            val userId = json.optInt("userId")
+            val dateTime = json.optString("dateTime")
+            val mode = json.optString("mode")
+            val amplitude = json.optInt("amplitude")
+            val frequency = json.optInt("frequency")
+            val period = json.optDouble("period")
+            val cycle = json.optInt("cycle")
+            val phase = json.optInt("phase")
+            val onTime = json.optInt("onTime")
+            val offTime = json.optInt("offTime")
+            val rampTime = json.optDouble("rampTime")
+            val duty = json.optInt("duty")
+            val totalTime = json.optInt("totalTime")
+            val progressTime = json.optInt("progressTime")
+            val isBillable = json.optBoolean("isBillable")
 
-            Log.d(TAG, "IPC Provider: Received Electric Result - ID: $id, Time: $progressTime, Mode: $modeId") // 로그 추가
+            Log.d(
+                TAG,
+                "IPC Provider: Received Electric Result - userId: $userId, dateTime: $dateTime, mode: $mode, " +
+                    "amplitude: $amplitude, frequency: $frequency, period: $period, cycle: $cycle, phase: $phase, " +
+                    "onTime: $onTime, offTime: $offTime, rampTime: $rampTime, duty: $duty, totalTime: $totalTime, " +
+                    "progressTime: $progressTime"
+            )
 
             val electricResultPrefs = appContext.getSharedPreferences("electric_result_prefs", Context.MODE_PRIVATE)
             with(electricResultPrefs.edit()) {
-                putLong("electric_id", id)
-                putLong("electric_progress_time", progressTime)
-                putLong("electric_mode_id", modeId)
+                putInt("userId", userId)
+                putString("dateTime", dateTime)
+                putString("mode", mode)
+                putInt("amplitude", amplitude)
+                putInt("frequency", frequency)
+                putString("period", period.toString())
+                putInt("cycle", cycle)
+                putInt("phase", phase)
+                putInt("onTime", onTime)
+                putInt("offTime", offTime)
+                putString("rampTime", rampTime.toString())
+                putInt("duty", duty)
+                putInt("totalTime", totalTime)
+                putInt("progressTime", progressTime)
+                putBoolean("isBillable", isBillable)
+                putLong("electric_progress_time", progressTime.toLong())
+
+                // Backward compatibility for existing consumers.
+                if (json.has("id")) {
+                    putLong("electric_id", json.optLong("id"))
+                }
+                if (json.has("modeId")) {
+                    putLong("electric_mode_id", json.optLong("modeId"))
+                }
                 apply()
             }
 

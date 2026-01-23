@@ -55,7 +55,31 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         Text(text = uiState.selectedPatient?.toString() ?: "없음")
 
         Text(text = "최근 전기자극 결과:")
-        Text(text = uiState.electricResult?.toString() ?: "없음")
+        val electricResult = uiState.electricResult
+        if (electricResult == null) {
+            Text(text = "없음")
+        } else {
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(text = "userId: ${electricResult.userId}")
+                Text(text = "dateTime: ${electricResult.dateTime}")
+                Text(text = "mode: ${electricResult.mode}")
+                Text(text = "amplitude: ${electricResult.amplitude}")
+                Text(text = "frequency: ${electricResult.frequency}")
+                Text(text = "period: ${electricResult.period}")
+                Text(text = "cycle: ${electricResult.cycle}")
+                Text(text = "phase: ${electricResult.phase}")
+                Text(text = "onTime: ${electricResult.onTime}")
+                Text(text = "offTime: ${electricResult.offTime}")
+                Text(text = "rampTime: ${electricResult.rampTime}")
+                Text(text = "duty: ${electricResult.duty}")
+                Text(text = "totalTime: ${electricResult.totalTime}")
+                Text(text = "progressTime: ${electricResult.progressTime}")
+                Text(text = "isBillable: ${electricResult.isBillable}")
+            }
+        }
 
         Row(modifier = Modifier.padding(top = 16.dp)) {
             Button(onClick = { viewModel.selectPatient() }) {

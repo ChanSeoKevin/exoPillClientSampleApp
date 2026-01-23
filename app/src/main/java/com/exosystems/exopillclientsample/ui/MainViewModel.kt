@@ -25,10 +25,22 @@ data class Patient(
  * @property progressTime 진행 시간 (밀리초)
  * @property modeId 모드 ID
  */
-data class ElectricResult(
-    val id: Long,
-    val progressTime: Long,
-    val modeId: Long
+data class ElectricResultPrefs(
+    val userId: Int,
+    val dateTime: String,
+    val mode: String,
+    val amplitude: Int,
+    val frequency: Int,
+    val period: Double,
+    val cycle: Int,
+    val phase: Int,
+    val onTime: Int,
+    val offTime: Int,
+    val rampTime: Double,
+    val duty: Int,
+    val totalTime: Int,
+    val progressTime: Int,
+    val isBillable: Boolean
 )
 
 
@@ -39,7 +51,7 @@ data class ElectricResult(
  */
 data class MainUiState(
     val selectedPatient: Patient? = null,
-    val electricResult: ElectricResult? = null
+    val electricResult: ElectricResultPrefs? = null
 )
 
 /**
@@ -68,7 +80,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-        if (sharedPreferences == electricResultSharedPreferences && (key == "electric_id" || key == "electric_progress_time" || key == "electric_mode_id")) {
+        if (sharedPreferences == electricResultSharedPreferences) {
             loadElectricResult()
         }
         if (sharedPreferences == patientSharedPreferences && (key == "patient_id" || key == "hospital_name")) {
@@ -92,13 +104,58 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     }
 
     private fun loadElectricResult() {
-        val id = electricResultSharedPreferences.getLong("electric_id", -1L)
-        val progressTime = electricResultSharedPreferences.getLong("electric_progress_time", -1L)
-        val modeId = electricResultSharedPreferences.getLong("electric_mode_id", -1L)
+        val userId = electricResultSharedPreferences.getInt("userId", Int.MIN_VALUE)
+        val dateTime = electricResultSharedPreferences.getString("dateTime", null)
+        val mode = electricResultSharedPreferences.getString("mode", null)
+        val amplitude = electricResultSharedPreferences.getInt("amplitude", Int.MIN_VALUE)
+        val frequency = electricResultSharedPreferences.getInt("frequency", Int.MIN_VALUE)
+        val period = electricResultSharedPreferences.getString("period", null)?.toDoubleOrNull()
+        val cycle = electricResultSharedPreferences.getInt("cycle", Int.MIN_VALUE)
+        val phase = electricResultSharedPreferences.getInt("phase", Int.MIN_VALUE)
+        val onTime = electricResultSharedPreferences.getInt("onTime", Int.MIN_VALUE)
+        val offTime = electricResultSharedPreferences.getInt("offTime", Int.MIN_VALUE)
+        val rampTime = electricResultSharedPreferences.getString("rampTime", null)?.toDoubleOrNull()
+        val duty = electricResultSharedPreferences.getInt("duty", Int.MIN_VALUE)
+        val totalTime = electricResultSharedPreferences.getInt("totalTime", Int.MIN_VALUE)
+        val progressTime = electricResultSharedPreferences.getInt("progressTime", Int.MIN_VALUE)
+        val isBillable = electricResultSharedPreferences.getBoolean("isBillable", false)
 
-        if (id != -1L && progressTime != -1L && modeId != -1L) {
+        val hasAllFields = userId != Int.MIN_VALUE &&
+            dateTime != null &&
+            mode != null &&
+            amplitude != Int.MIN_VALUE &&
+            frequency != Int.MIN_VALUE &&
+            period != null &&
+            cycle != Int.MIN_VALUE &&
+            phase != Int.MIN_VALUE &&
+            onTime != Int.MIN_VALUE &&
+            offTime != Int.MIN_VALUE &&
+            rampTime != null &&
+            duty != Int.MIN_VALUE &&
+            totalTime != Int.MIN_VALUE &&
+            progressTime != Int.MIN_VALUE
+
+        if (hasAllFields) {
             _uiState.update { currentState ->
-                currentState.copy(electricResult = ElectricResult(id, progressTime, modeId))
+                currentState.copy(
+                    electricResult = ElectricResultPrefs(
+                        userId = userId,
+                        dateTime = dateTime ?: "",
+                        mode = mode ?: "",
+                        amplitude = amplitude,
+                        frequency = frequency,
+                        period = period ?: 0.0,
+                        cycle = cycle,
+                        phase = phase,
+                        onTime = onTime,
+                        offTime = offTime,
+                        rampTime = rampTime ?: 0.0,
+                        duty = duty,
+                        totalTime = totalTime,
+                        progressTime = progressTime,
+                        isBillable = isBillable
+                    )
+                )
             }
         } else {
             _uiState.update { currentState ->
@@ -142,8 +199,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     fun clearElectricResult() {
         _uiState.update { it.copy(electricResult = null) }
         with(electricResultSharedPreferences.edit()) {
-            remove("electric_id")
+            remove("userId")
+            remove("dateTime")
+            remove("mode")
+            remove("amplitude")
+            remove("frequency")
+            remove("period")
+            remove("cycle")
+            remove("phase")
+            remove("onTime")
+            remove("offTime")
+            remove("rampTime")
+            remove("duty")
+            remove("totalTime")
+            remove("progressTime")
+            remove("isBillable")
             remove("electric_progress_time")
+            remove("electric_id")
             remove("electric_mode_id")
             apply()
         }
