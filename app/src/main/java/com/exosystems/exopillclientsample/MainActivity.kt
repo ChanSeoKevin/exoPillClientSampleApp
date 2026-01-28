@@ -51,13 +51,25 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "현재 선택된 환자:")
-        Text(text = uiState.selectedPatient?.toString() ?: "없음")
+        Text(text = "Selected patient:")
+        val selectedPatient = uiState.selectedPatient
+        if (selectedPatient == null) {
+            Text(text = "none")
+        } else {
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(text = "patientCode: ${selectedPatient.patientCode}")
+                Text(text = "name: ${selectedPatient.name}")
+                Text(text = "measurementCode: ${selectedPatient.measurementCode}")
+            }
+        }
 
-        Text(text = "최근 전기자극 결과:")
+        Text(text = "Latest electric result:")
         val electricResult = uiState.electricResult
         if (electricResult == null) {
-            Text(text = "없음")
+            Text(text = "none")
         } else {
             Column(
                 modifier = Modifier.padding(top = 8.dp),
@@ -78,20 +90,21 @@ fun MainScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                 Text(text = "totalTime: ${electricResult.totalTime}")
                 Text(text = "progressTime: ${electricResult.progressTime}")
                 Text(text = "isBillable: ${electricResult.isBillable}")
+                Text(text = "measurementCode: ${electricResult.measurementCode ?: "-"}")
             }
         }
 
         Row(modifier = Modifier.padding(top = 16.dp)) {
             Button(onClick = { viewModel.selectPatient() }) {
-                Text(text = "환자 선택")
+                Text(text = "Select patient")
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(onClick = { viewModel.clearPatient() }) {
-                Text(text = "환자 초기화")
+                Text(text = "Clear patient")
             }
             Spacer(modifier = Modifier.width(16.dp))
             Button(onClick = { viewModel.clearElectricResult() }) {
-                Text(text = "전기자극 결과 초기화")
+                Text(text = "Clear electric result")
             }
         }
     }

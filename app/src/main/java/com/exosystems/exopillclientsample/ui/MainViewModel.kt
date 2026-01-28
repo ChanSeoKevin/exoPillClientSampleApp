@@ -3,6 +3,7 @@ package com.exosystems.exopillclientsample.ui
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -10,13 +11,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * 환자 정보 데이터 클래스
- * @property patientId 환자 ID
- * @property hospitalName 병원 이름
+ * Patient data used for bridge and UI.
+ * @property measurementCode Measurement identifier for result payload.
+ * @property patientCode Patient code for display.
+ * @property name Patient name for display.
  */
 data class Patient(
-    val patientId: String,
-    val hospitalName: String
+
+    val measurementCode: String,
+    val patientCode: String,
+    val name: String
 )
 
 /**
@@ -40,7 +44,8 @@ data class ElectricResultPrefs(
     val duty: Int,
     val totalTime: Int,
     val progressTime: Int,
-    val isBillable: Boolean
+    val isBillable: Boolean,
+    val measurementCode: String?
 )
 
 
@@ -60,7 +65,7 @@ data class MainUiState(
 class MainViewModel(application: Application) : AndroidViewModel(application),
     SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private val patientSharedPreferences = application.getSharedPreferences("patient_prefs", Context.MODE_PRIVATE)
+    private val patientSharedPreferences = application.getSharedPreferences(patientPrefsName, Context.MODE_PRIVATE)
     private val electricResultSharedPreferences = application.getSharedPreferences("electric_result_prefs", Context.MODE_PRIVATE)
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -83,20 +88,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
         if (sharedPreferences == electricResultSharedPreferences) {
             loadElectricResult()
         }
-        if (sharedPreferences == patientSharedPreferences && (key == "patient_id" || key == "hospital_name")) {
+        if (
+            sharedPreferences == patientSharedPreferences &&
+            (key == keyMeasurementCode || key == keyPatientCode || key == keyPatientName)
+        ) {
             loadPatient()
         }
     }
 
     private fun loadPatient() {
-        val patientId = patientSharedPreferences.getString("patient_id", null)
-        val hospitalName = patientSharedPreferences.getString("hospital_name", null)
+        try {
+            // Load patient identifiers required by the B2B app and UI.
+            val measurementCode = patientSharedPreferences.getString(keyMeasurementCode, null)
+            val patientCode = patientSharedPreferences.getString(keyPatientCode, null)
+            val patientName = patientSharedPreferences.getString(keyPatientName, null)
 
-        if (patientId != null && hospitalName != null) {
-            _uiState.update { currentState ->
-                currentState.copy(selectedPatient = Patient(patientId, hospitalName))
+            if (measurementCode != null && patientCode != null && patientName != null) {
+                _uiState.update { currentState ->
+                    currentState.copy(selectedPatient = Patient(measurementCode, patientCode, patientName))
+                }
+            } else {
+                _uiState.update { currentState ->
+                    currentState.copy(selectedPatient = null)
+                }
             }
-        } else {
+        } catch (e: Exception) {
+            Log.e(logTag, "Failed to load patient info.", e)
             _uiState.update { currentState ->
                 currentState.copy(selectedPatient = null)
             }
@@ -119,6 +136,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
         val totalTime = electricResultSharedPreferences.getInt("totalTime", Int.MIN_VALUE)
         val progressTime = electricResultSharedPreferences.getInt("progressTime", Int.MIN_VALUE)
         val isBillable = electricResultSharedPreferences.getBoolean("isBillable", false)
+        val measurementCode = electricResultSharedPreferences.getString("measurement_code", null)
 
         val hasAllFields = userId != Int.MIN_VALUE &&
             dateTime != null &&
@@ -153,7 +171,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
                         duty = duty,
                         totalTime = totalTime,
                         progressTime = progressTime,
-                        isBillable = isBillable
+                        isBillable = isBillable,
+                        measurementCode = measurementCode
                     )
                 )
             }
@@ -170,14 +189,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     fun selectPatient() {
         val randomId = (1000..9999).random()
         val newPatient = Patient(
-            patientId = "P$randomId",
-            hospitalName = "Exo Hospital"
+            measurementCode = "$randomId",
+            patientCode = "${randomId + randomId}",
+            name = "이지금"
         )
         _uiState.update { it.copy(selectedPatient = newPatient) }
-        with(patientSharedPreferences.edit()) {
-            putString("patient_id", newPatient.patientId)
-            putString("hospital_name", newPatient.hospitalName)
-            apply()
+        try {
+            // Persist patient identifiers so the bridge can deliver them to the B2B app.
+            with(patientSharedPreferences.edit()) {
+                putString(keyMeasurementCode, newPatient.measurementCode)
+                putString(keyPatientCode, newPatient.patientCode)
+                putString(keyPatientName, newPatient.name)
+                apply()
+            }
+        } catch (e: Exception) {
+            Log.e(logTag, "Failed to save patient info.", e)
         }
     }
 
@@ -186,10 +212,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
      */
     fun clearPatient() {
         _uiState.update { it.copy(selectedPatient = null) }
-        with(patientSharedPreferences.edit()) {
-            remove("patient_id")
-            remove("hospital_name")
-            apply()
+        try {
+            with(patientSharedPreferences.edit()) {
+                remove(keyMeasurementCode)
+                remove(keyPatientCode)
+                remove(keyPatientName)
+                apply()
+            }
+        } catch (e: Exception) {
+            Log.e(logTag, "Failed to clear patient info.", e)
         }
     }
 
@@ -217,7 +248,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
             remove("electric_progress_time")
             remove("electric_id")
             remove("electric_mode_id")
+            remove("measurement_code")
             apply()
         }
+    }
+
+    private companion object {
+        const val patientPrefsName = "patient_prefs"
+        const val keyMeasurementCode = "measurement_code"
+        const val keyPatientCode = "patient_code"
+        const val keyPatientName = "patient_name"
+        const val logTag = "MainViewModel"
     }
 }

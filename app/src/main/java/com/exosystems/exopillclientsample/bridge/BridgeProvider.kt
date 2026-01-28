@@ -72,15 +72,17 @@ class BridgeProvider : ContentProvider() {
         json.put("timestamp", System.currentTimeMillis())
 
         // SharedPreferences에서 환자 정보 읽기
-        val sharedPreferences = appContext.getSharedPreferences("patient_prefs", Context.MODE_PRIVATE)
-        val patientId = sharedPreferences.getString("patient_id", null)
-        val hospitalName = sharedPreferences.getString("hospital_name", null)
+        val sharedPreferences = appContext.getSharedPreferences(PATIENT_PREFS_NAME, Context.MODE_PRIVATE)
+        val measurementCode = sharedPreferences.getString(KEY_MEASUREMENT_CODE, null)
+        val patientCode = sharedPreferences.getString(KEY_PATIENT_CODE, null)
+        val patientName = sharedPreferences.getString(KEY_PATIENT_NAME, null)
 
-        if (patientId != null && hospitalName != null) {
-            // 환자 정보가 있으면 message에 JSON 형태로 담기
+        if (measurementCode != null && patientCode != null && patientName != null) {
+            // Send the real-world patient identifiers expected by the B2B app.
             val patientJson = JSONObject()
-            patientJson.put("patientId", patientId)
-            patientJson.put("hospitalName", hospitalName)
+            patientJson.put("measurementCode", measurementCode)
+            patientJson.put("patientCode", patientCode)
+            patientJson.put("name", patientName)
             json.put("message", patientJson.toString())
         } else {
             // 환자 정보가 없으면 message를 비워두거나 특정 메시지 전달
@@ -125,6 +127,7 @@ class BridgeProvider : ContentProvider() {
             val totalTime = json.optInt("totalTime")
             val progressTime = json.optInt("progressTime")
             val isBillable = json.optBoolean("isBillable")
+            val measurementCode = json.optString("measurementCode")
 
             Log.d(
                 TAG,
@@ -152,6 +155,7 @@ class BridgeProvider : ContentProvider() {
                 putInt("progressTime", progressTime)
                 putBoolean("isBillable", isBillable)
                 putLong("electric_progress_time", progressTime.toLong())
+                putString("measurement_code", measurementCode)
 
                 // Backward compatibility for existing consumers.
                 if (json.has("id")) {
@@ -305,5 +309,9 @@ class BridgeProvider : ContentProvider() {
         const val ALLOWED_PACKAGE_NAME: String = "com.exosystems.b2b.integration"
         /** 접근 허용 서명 SHA-256 지문(콜론 제거 소문자) */
         const val ALLOWED_CERT_SHA256: String = "6E:0A:49:3E:4C:7E:F0:38:41:A4:17:F1:49:BD:78:22:F7:A2:60:D2:EE:93:32:1F:AB:75:85:88:12:3F:94:38"
+        const val PATIENT_PREFS_NAME: String = "patient_prefs"
+        const val KEY_MEASUREMENT_CODE: String = "measurement_code"
+        const val KEY_PATIENT_CODE: String = "patient_code"
+        const val KEY_PATIENT_NAME: String = "patient_name"
     }
 }
