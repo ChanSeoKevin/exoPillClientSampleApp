@@ -177,28 +177,6 @@ class BridgeProvider : ContentProvider() {
         }
     }
 
-    /** 결과를 저장하고 비동기 워크를 큐에 넣는다. */
-    private fun handleResultFromB(requestId: String, payload: String): Boolean {
-        val saved = repository.saveResult(requestId, payload)
-        if (!saved) return false
-
-        enqueueResultSyncWork(requestId, payload)
-        return true
-    }
-
-    /** WorkManager에 payload 동기화 작업을 등록한다. */
-    private fun enqueueResultSyncWork(requestId: String, payload: String) {
-        val workRequest = OneTimeWorkRequestBuilder<BridgeResultSyncWorker>()
-            .setInputData(
-                workDataOf(
-                    ABridgeContract.EXTRA_REQUEST_ID to requestId,
-                    ABridgeContract.EXTRA_PAYLOAD to payload
-                )
-            )
-            .build()
-        WorkManager.getInstance(appContext).enqueue(workRequest)
-    }
-
     /** 호출자 패키지/서명을 검증하여 allowlist 외 접근을 차단한다. */
     private fun enforceCallerAllowed(context: Context) {
         val uid = Binder.getCallingUid()

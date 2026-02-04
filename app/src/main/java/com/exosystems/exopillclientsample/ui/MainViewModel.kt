@@ -186,12 +186,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     /**
      * 환자를 선택하고 상태를 업데이트 및 저장합니다.
      */
+    val nameList = arrayListOf<String>("이지금", "이찬서", "김태형", "박찬호", "김형식")
     fun selectPatient() {
         val randomId = (1000..9999).random()
         val newPatient = Patient(
             measurementCode = "$randomId",
             patientCode = "${randomId + randomId}",
-            name = "이지금"
+            name = nameList.random()
         )
         _uiState.update { it.copy(selectedPatient = newPatient) }
         try {
