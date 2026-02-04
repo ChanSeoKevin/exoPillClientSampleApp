@@ -1,6 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
+    <queries>
+        <package android:name="com.exosystems.b2b.integration" />
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -23,6 +27,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".bridge.BridgeProvider"
+            android:authorities="com.exosystems.exopillclientsample.bridge"
+            android:exported="true" />
     </application>
 
 </manifest>

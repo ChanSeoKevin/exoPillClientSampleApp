@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
 }
@@ -10,7 +10,6 @@ android {
     defaultConfig {
         applicationId = "com.exosystems.exopillclientsample"
         minSdk = 28
-        //noinspection EditedTargetSdkVersion
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -60,6 +59,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
